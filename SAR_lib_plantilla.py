@@ -465,8 +465,10 @@ class SAR_Indexer:
         return: posting list con todos los artid exceptos los contenidos en p
 
         """
-        
-        pass
+        news = self.news.keys()
+        p = [newId for newId, f in p]
+        return [[newId,0] for newId in news if newId not in p]
+      
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
@@ -485,8 +487,22 @@ class SAR_Indexer:
         return: posting list con los artid incluidos en p1 y p2
 
         """
-        
-        pass
+        if p1 == [] or p2 == []: return []
+        respost = []
+        iP1 = 0; iP2 = 0
+        while iP1 < len(p1) and iP2 < len(p2):
+            dataP1 = p1[iP1]
+            dataP2 = p2[iP2]
+            if dataP1[0] == dataP2[0]:
+                #dataP1[1] += dataP2[1]
+                respost.append(dataP1)
+                iP1 += 1; iP2 += 1
+            elif dataP1[0] > dataP2[0]:
+                iP2 += 1
+            else:
+                iP1 += 1
+        return respost
+       
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
