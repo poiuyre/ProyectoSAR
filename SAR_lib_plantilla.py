@@ -521,8 +521,30 @@ class SAR_Indexer:
         return: posting list con los artid incluidos de p1 o p2
 
         """
+        respost = []
+        iP1 = 0; iP2 = 0
+        while iP1 < len(p1) and iP2 < len(p2):
+            dataP1 = p1[iP1]
+            dataP2 = p2[iP2]
+            if dataP1[0] == dataP2[0]:
+                respost.append(dataP1)
+                iP1 += 1; iP2 += 1
+            elif dataP1[0] > dataP2[0]:
+                respost.append(dataP2)
+                iP2 += 1
+            else:
+                respost.append(dataP1)
+                iP1 += 1
 
-        pass
+        while iP1 < len(p1):
+            respost.append(p1[iP1])
+            iP1 += 1
+        while iP2 < len(p2):
+            respost.append(p2[iP2])
+            iP2 += 1
+
+        return respost
+    
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
@@ -541,9 +563,19 @@ class SAR_Indexer:
         return: posting list con los artid incluidos de p1 y no en p2
 
         """
+        iP1 = 0; iP2 = 0
+        while iP1 < len(p1) and iP2 < len(p2):
+            dataP1 = p1[iP1]
+            dataP2 = p2[iP2]
+            if dataP1[0] == dataP2[0]:
+                p1.pop(iP1)
+                iP2 += 1
+            elif dataP1[0] > dataP2[0]:
+                iP1 += 1
+            else:
+                iP2 += 1
+        return p1
 
-        
-        pass
         ########################################################
         ## COMPLETAR PARA TODAS LAS VERSIONES SI ES NECESARIO ##
         ########################################################
