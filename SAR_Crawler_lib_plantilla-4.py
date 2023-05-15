@@ -151,13 +151,53 @@ class SAR_Wiki_Crawler:
 
         """
         def clean_text(txt):
-            return '\n'.join(l for l in txt.split('\n') if len(l) > 0)
+            return '\n'.join(l for l in txt.split('\n') if len(l) > 0).strip()
 
-        document = None
+        document = {'url': url}
+        
+         # Parsear título y resumen del artículo
+        match = self.title_sum_re.search(text)
+        if not match:
+            return None
+        title = match.group('title').strip()
+        summary = clean_text(match.group('summary'))
+        if not title or not summary:
+            return None
+        document['title'] = title
+        document['summary'] = summary
 
-        # COMPLETAR
-
+        # Parsear las secciones del artículo
+        sections = self.sections_re.split(match.group('rest'))
+        document['sections'] = self.parse_sections(sections)
+     
         return document
+    
+        def parse_sections(self, sections: List[str]) -> List[Dict[str, Union[str, List]]]:
+            def clean_text(txt):
+                return '\n'.join(l for l in txt.split('\n') if len(l) > 0).strip()
+
+            parsed_sections = []
+
+            for section_text in sections:
+                match = self.section_re.match(section_text)
+                if match:
+                    section = {'name': match.group('name').strip(), 'text': clean_text(match.group('text'))}
+                    subsections = self.subsections_re.split(match.group('rest'))
+                    section['subsections'] = self.parse_subsections(subsections)
+                    parsed_sections.append(section)
+
+            return parsed_sections
+
+        def parse_subsections(self, subsections: List[str]) -> List[Dict[str, str]]:
+            parsed_subsections = []
+
+            for subsection_text in subsections:
+                match = self.subsection_re.match(subsection_text)
+                if match:
+                    subsection = {'name': match.group('name').strip(), 'text': match.group('text').strip()}
+                    parsed_subsections.append(subsection)
+
+            return parsed_subsections
 
 
     def save_documents(self,
