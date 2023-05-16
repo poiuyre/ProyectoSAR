@@ -172,7 +172,7 @@ class SAR_Wiki_Crawler:
      
         return document
     
-        def parse_sections(self, sections: List[str]) -> List[Dict[str, Union[str, List]]]:
+    def parse_sections(self, sections: List[str]) -> List[Dict[str, Union[str, List]]]:
             def clean_text(txt):
                 return '\n'.join(l for l in txt.split('\n') if len(l) > 0).strip()
 
@@ -188,7 +188,7 @@ class SAR_Wiki_Crawler:
 
             return parsed_sections
 
-        def parse_subsections(self, subsections: List[str]) -> List[Dict[str, str]]:
+    def parse_subsections(self, subsections: List[str]) -> List[Dict[str, str]]:
             parsed_subsections = []
 
             for subsection_text in subsections:
