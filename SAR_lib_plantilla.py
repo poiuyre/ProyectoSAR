@@ -321,7 +321,34 @@ class SAR_Indexer:
         Muestra estadisticas de los indices
         
         """
-        pass
+        print("=" * 40)
+        print("Number of indexed days:", len(self.docs))
+        print("-" * 40)
+        print("Number of indexed news:", len(self.news))
+        print("-" * 40)
+        print('TOKENS:')
+        for field, tok in self.fields:
+            if (self.multifield or field == "article"):
+                print("\t# of tokens in '{}': {}".format(field, len(self.index[field])))
+        if (self.permuterm):
+            print("-" * 40)
+            print('PERMUTERMS:')
+            for field, tok in self.fields:
+                if (self.multifield or field == "article"):
+                    print("\t# of tokens in '{}': {}".format(field, len(self.ptindex[field])))
+        if (self.stemming):
+            print("-" * 40)
+            print('STEMS:')
+            for field, tok in self.fields:
+                if (self.multifield or field == "article"):
+                    print("\t# of tokens in '{}': {}".format(field, len(self.sindex[field])))
+        print("-" * 40)
+        if (self.positional):
+            print('Positional queries are allowed.')
+        else:    
+            print('Positional queries are NOT allowed.')
+        print("=" * 40)
+        
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
@@ -358,9 +385,51 @@ class SAR_Indexer:
         return: posting list con el resultado de la query
 
         """
-
+        # Si no hay nada en la query, se devuelve la lista vacía
         if query is None or len(query) == 0:
             return []
+        
+        # Preproceso de la query si es un string. La convertimos en una lista de elementos (incluidos operaciones, parentesis y posicionales)
+        if isinstance(query, str): queryList = self.prepare_query_list(query)
+        else: queryList = query
+        
+        # Caso base si solo hay un elemento para el que resolver la consulta
+        if len(queryList) == 1:
+            element = queryList[0]
+            # Si el indice es multicampo, guardamos el campo donde se buscara. Si no lo es, buscamos en 'article'
+            if self.multifield: field, element = self.get_field(element)
+            else: field, element = 'article', query
+            # Si esta entre parentesis, los quitamos y llamamos a solve_query de la consulta interior
+            if element.startswith('(') and element.endswith(')'):
+                element = element[1:len(element)-1] 
+                return self.solve_query(element)
+            return self.get_posting(element, field)
+            
+        # Caso general: Si hay más de un elemento en la búsqueda        
+        if len(queryList) > 1:
+            opIndex = len(queryList) - 2
+            operation = queryList[opIndex]
+            beforeOp = queryList[0:opIndex]
+            afterOp = queryList[opIndex + 1]
+            # Llamadas recursivas en función de la operación a realizar
+            if operation == 'or':
+                return self.or_posting(self.solve_query(beforeOp), self.solve_query(afterOp))
+            elif operation == 'and':
+                return self.and_posting(self.solve_query(beforeOp), self.solve_query(afterOp))
+            elif operation == 'not':
+                # Si la operación es not, consultamos si hay otra operación que la precede y resolvemos
+                if opIndex > 0: opIndex -= 1; operation = queryList[opIndex] # Si not es el primer elemento de la lista, no decrementamos el puntero
+                else: return self.reverse_posting(self.solve_query(afterOp)) # Si lo es, resolvemos el not
+
+                beforeOp = queryList[0:opIndex]
+                if operation == 'or':
+                    return self.or_posting(self.solve_query(beforeOp), 
+                        self.reverse_posting(self.solve_query(afterOp)))
+                elif operation == 'and':
+                    return self.and_posting(self.solve_query(beforeOp), 
+                        self.reverse_posting(self.solve_query(afterOp)))
+
+        
 
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
@@ -387,10 +456,28 @@ class SAR_Indexer:
         NECESARIO PARA TODAS LAS VERSIONES
 
         """
+        # Llamada al get que corresponde según los parámetros indicados
+        solution = []
+        if self.permuterm and ('*' in term or '?' in term):
+            solution =  self.get_permuterm(term, field)
+        elif self.positional:
+            if '\"' in term:
+                term = term.replace('\"','')
+                solution = self.get_positionals(term.split(' '), field)
+            elif self.stemming and self.use_stemming:
+                solution =  self.get_stemming(term, field)
+            else:
+                solution = self.get_positionals([term], field)
+        elif self.stemming and self.use_stemming:
+            solution =  self.get_stemming(term, field)
+        else:
+            solution =  self.index[field][term]
+
+        return solution
         ########################################
         ## COMPLETAR PARA TODAS LAS VERSIONES ##
         ########################################
-        pass
+        
 
 
 
