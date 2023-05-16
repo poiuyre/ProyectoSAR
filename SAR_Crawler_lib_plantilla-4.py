@@ -276,51 +276,55 @@ class SAR_Wiki_Crawler:
             # de guardado
             total_files = math.ceil(document_limit / batch_size)
 
-         while queue and total_documents_captured < document_limit:
-            _, parent_url, current_url = hq.heappop(queue)
-            if current_url in visited:
-                continue
+         # Proceso de captura
+        while queue and total_documents_captured < document_limit:
+            # Seleccionar una página no procesada de la cola de prioridad
+            _, parent, url = hq.heappop(queue)
 
-            visited.add(current_url)
+            # Descargar el contenido textual de la página y los enlaces que aparecen en ella
+            entry_content, links = self.get_wikipedia_entry_content(url)
 
-            # Descargar contenido textual y enlaces
-            entry_content, links = self.get_wikipedia_entry_content(current_url)
+            if entry_content is not None:
+                # Añadir los enlaces a la cola de páginas pendientes de procesar
+                for link in links:
+                    if self.is_valid_url(link) and link not in visited:
+                        hq.heappush(queue, (max_depth_level, url, link))
+                        visited.add(link)
 
-            # Añadir enlaces a la cola si cumplen las condiciones
-            for link in links:
-                if self.is_valid_url(link) and link not in visited:
-                    hq.heappush(queue, (self.get_priority(link, max_depth_level), current_url, link))
+                # Analizar el contenido textual para generar el diccionario con el contenido estructurado del artículo
+                document = self.parse_wikipedia_textual_content(entry_content, url)
+                if document is not None:
+                    documents.append(document)
+                    total_documents_captured += 1
 
-            # Analizar el contenido textual
-            document = self.parse_wikipedia_textual_content(entry_content, current_url)
-            if document is not None:
-                documents.append(document)
-                total_documents_captured += 1
+                    # Guardar los bloques de artículos en memoria secundaria cuando sea necesario
+                    if batch_size is not None and len(documents) >= batch_size:
+                        self.save_documents(documents, f"{base_filename}_{files_count}.json")
+                        files_count += 1
+                        documents = []
 
-            # Guardar documentos si se alcanza el tamaño del lote
-            if batch_size is not None and total_documents_captured % batch_size == 0:
-                self.save_documents(documents, base_filename, files_count)
-                documents = []
-                files_count += 1
+        # Guardar los documentos restantes si no se alcanzó el tamaño de batch
+        if documents:
+            self.save_documents(documents, f"{base_filename}_{files_count}.json")
+            
+        return total_documents_captured
 
-        # Guardar documentos restantes si no se alcanzó el tamaño del lote
-        if batch_size is None or total_documents_captured % batch_size != 0:
-            self.save_documents(documents, base_filename, files_count)
 
-    def get_priority(self, url: str, max_depth_level: int) -> int:
+    #def get_priority(self, url: str, max_depth_level: int) -> int:
         # Implementar lógica para asignar prioridades a las URLs
         # basándose en su profundidad y otras consideraciones
-        pass
+        #pass
 
-    def get_wikipedia_entry_content(self, url: str) -> tuple:
+    #def get_wikipedia_entry_content(self, url: str) -> tuple:
         # Implementar lógica para descargar el contenido textual y los enlaces de la URL
-        pass
+        # pass
 
-    def is_valid_url(self, url: str) -> bool:
+    # def is_valid_url(self, url: str) -> bool:
         # Implementar lógica para verificar si la URL es válida
-        pass
+        # pass
 
-    def save_documents(self, documents: List[dict], base_filename: str, file_count: int):
+    #
+    # def save_documents(self, documents: List[dict], base_filename: str, file_count: int):
         # Implementar lógica para guardar los documentos en memoria sec
 
 
