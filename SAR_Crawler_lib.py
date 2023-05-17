@@ -42,6 +42,8 @@ class SAR_Wiki_Crawler:
         Returns:
             bool: True si es valida, en caso contrario False
         """
+        
+   
         return self.wiki_re.fullmatch(url) is not None
 
 
@@ -150,12 +152,14 @@ class SAR_Wiki_Crawler:
             en caso de no encontrar título o resúmen del artículo, devolverá None
 
         """
+       
+
         def clean_text(txt):
             return '\n'.join(l for l in txt.split('\n') if len(l) > 0).strip()
 
         document = {'url': url}
         
-         # Parsear título y resumen del artículo
+        # Parsear título y resumen del artículo
         match = self.title_sum_re.search(text)
         if not match:
             return None
@@ -198,6 +202,8 @@ class SAR_Wiki_Crawler:
                     parsed_subsections.append(subsection)
 
             return parsed_subsections
+
+
 
 
     def save_documents(self,
@@ -275,59 +281,58 @@ class SAR_Wiki_Crawler:
             # Suponemos que vamos a poder alcanzar el límite para la nomenclatura
             # de guardado
             total_files = math.ceil(document_limit / batch_size)
-
+         # No sea none
+         	
          # Proceso de captura
         while queue and total_documents_captured < document_limit:
+    
             # Seleccionar una página no procesada de la cola de prioridad
-            _, parent, url = hq.heappop(queue)
+            item = hq.heappop(queue)
+            if item is not None:
+            	_, parent, url = item	
 
             # Descargar el contenido textual de la página y los enlaces que aparecen en ella
             entry_content, links = self.get_wikipedia_entry_content(url)
 
-            if entry_content is not None:
-                # Añadir los enlaces a la cola de páginas pendientes de procesar
-                for link in links:
+            if entry_content is not None and links is not None:
+            	for link in links:
                     if self.is_valid_url(link) and link not in visited:
                         hq.heappush(queue, (max_depth_level, url, link))
                         visited.add(link)
-
-                # Analizar el contenido textual para generar el diccionario con el contenido estructurado del artículo
-                document = self.parse_wikipedia_textual_content(entry_content, url)
-                if document is not None:
-                    documents.append(document)
-                    total_documents_captured += 1
-
-                    # Guardar los bloques de artículos en memoria secundaria cuando sea necesario
-                    if batch_size is not None and len(documents) >= batch_size:
-                        self.save_documents(documents, f"{base_filename}_{files_count}.json")
-                        files_count += 1
-                        documents = []
+            else:
+                # Añadir los enlaces a la cola de páginas pendientes de procesar  
+            	print("Error al obtener el contenido y los enlaces de la pagina: {url}")
+            	break
+            document = self.parse_wikipedia_textual_content(entry_content, url)
+            if document is not None and "title" in document and "summary" in document:
+            		documents.append(document)
+            		total_documents_captured += 1
+            		if batch_size is not None and len(documents) >= batch_size:
+            			self.save_documents(documents, f"{base_filename}_{files_count}.json")
+            			files_count += 1
+            			documents = []
 
         # Guardar los documentos restantes si no se alcanzó el tamaño de batch
         if documents:
             self.save_documents(documents, f"{base_filename}_{files_count}.json")
             
         return total_documents_captured
+                        
+         
 
+        """Comienza la captura de entradas de la Wikipedia a partir de una lista de urls vÃ¡lidas, 
+            termina cuando no hay urls en la cola o llega al mÃ¡ximo de documentos a capturar.
+        
+        Args:
+            initial_urls: Direcciones a artÃ­culos de la Wikipedia
+            document_limit (int): MÃ¡ximo nÃºmero de documentos a capturar
+            base_filename (str): Nombre base del fichero de guardado.
+            batch_size (Optional[int]): Cada cuantos documentos se guardan en
+                fichero. Si se asigna None, se guardarÃ¡ al finalizar la captura.
+            max_depth_level (int): Profundidad mÃ¡xima de captura.
+        """
 
-    #def get_priority(self, url: str, max_depth_level: int) -> int:
-        # Implementar lógica para asignar prioridades a las URLs
-        # basándose en su profundidad y otras consideraciones
-        #pass
-
-    #def get_wikipedia_entry_content(self, url: str) -> tuple:
-        # Implementar lógica para descargar el contenido textual y los enlaces de la URL
-        # pass
-
-    # def is_valid_url(self, url: str) -> bool:
-        # Implementar lógica para verificar si la URL es válida
-        # pass
-
-    #
-    # def save_documents(self, documents: List[dict], base_filename: str, file_count: int):
-        # Implementar lógica para guardar los documentos en memoria sec
-
-
+    	
     def wikipedia_crawling_from_url(self,
         initial_url: str, document_limit: int, base_filename: str,
         batch_size: Optional[int], max_depth_level: int
