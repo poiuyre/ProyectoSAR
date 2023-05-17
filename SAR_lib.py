@@ -43,9 +43,27 @@ class SAR_Indexer:
 
         """
         self.urls = set() # hash para las urls procesadas,
-        self.index = {} # hash para el indice invertido de terminos --> clave: termino, valor: posting list
-        self.sindex = {} # hash para el indice invertido de stems --> clave: stem, valor: lista con los terminos que tienen ese stem
-        self.ptindex = {} # hash para el indice permuterm.
+        self.index = {
+            'all': {},
+            'title': {},
+            'summary': {},
+            'section-name': {},
+            'summary': {},
+        } # hash para el indice invertido de terminos --> clave: termino, valor: posting list
+        self.sindex = {
+            'all': {},
+            'title': {},
+            'summary': {},
+            'section-name': {},
+            'summary': {},
+        } # hash para el indice invertido de stems --> clave: stem, valor: lista con los terminos que tienen ese stem
+        self.ptindex = {
+            'all': {},
+            'title': {},
+            'summary': {},
+            'section-name': {},
+            'summary': {},
+        } # hash para el indice permuterm.
         self.docs = {} # diccionario de terminos --> clave: entero(docid),  valor: ruta del fichero.
         self.weight = {} # hash de terminos para el pesado, ranking de resultados.
         self.articles = {} # hash de articulos --> clave entero (artid), valor: la info necesaria para diferencia los artículos dentro de su fichero
@@ -55,6 +73,9 @@ class SAR_Indexer:
         self.show_snippet = False # valor por defecto, se cambia con self.set_snippet()
         self.use_stemming = False # valor por defecto, se cambia con self.set_stemming()
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
+        self.cont = 0
+        txt = []
+        ax = {}
 
 
     ###############################
@@ -232,9 +253,38 @@ class SAR_Indexer:
 
 
         """
+
+        with open(filename, 'r') as file:
+
+            ##-------------extenssion por acabar----------
+            index = json.loads(file)
+            self.docs[self.cont] = filename
+            pos=0
+            for parte in index:
+                    # Realiza el indexado de acuerdo a los valores de multifield y positional
+                    self.articles[self.new_cont] = [self.doc_cont, pos
+                                                    ]
+                    if self.multifield:
+                        # Realiza el indexado considerando múltiples campos
+                        multifield = ['title', 'summary', 'section-name', ]
+                        
+                    else:
+                        # Realiza el indexado considerando un solo campo
+                          multifield = ['']
+                    
+                    if self.positional:
+                        # Realiza el indexado considerando la posición de los elementos
+                        pass
+
+            ##------------------------------------------
+
+        
         for i, line in enumerate(open(filename)):
             j = self.parse_article(line)
-
+            
+            self.txt[i] = j['all']
+            
+        
 
         #
         # 
@@ -720,6 +770,12 @@ class SAR_Indexer:
         return: el numero de artículo recuperadas, para la opcion -T
 
         """
+
+        resultado = self.solve_query(query)
+
+        print("consulta: ", query)
+        print("ha salido ", len(resultado), "veces")
+
         pass
         ################
         ## COMPLETAR  ##
