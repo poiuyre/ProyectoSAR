@@ -71,6 +71,7 @@ class SAR_Indexer:
         self.texto = {}
         self.docid = 0
         self.artid = 0
+        self.ntokens = 0
 
 
     ###############################
@@ -262,15 +263,15 @@ class SAR_Indexer:
             
             articulo =  self.articles[self.artid]
             tokens = self.tokenize(j['all'])
-            numToken = 0
+            
                 
 
         
             for t in tokens:
                 tokenAux = t
                 if self.index.get(t) == None:
-                    self.index[t] = [[self.docid,self.artid,numToken]]
-                    self.articles[self.docid] = [[self.docid,self.artid,numToken]]
+                    self.index[t] = [[self.docid,self.artid,self.ntokens]]
+                    self.articles[self.docid] = [[self.docid,self.artid,self.ntokens]]
                     
                     
                 else:
@@ -278,18 +279,18 @@ class SAR_Indexer:
                     
                     aux = self.index.get(t)
                     
-                    aux.append([self.docid,self.artid,numToken])
+                    aux.append([self.docid,self.artid,self.ntokens])
                     
                    
                     self.index[t] = aux
 
                     aux = self.articles.get(tokenAux)
                     
-                   # aux.append([self.docid,self.artid,numToken])
+                   # aux.append([self.docid,self.artid,self.ntokens])
                     self.articles[tokenAux] = aux
                     
-                numToken += 1
-            self.articles[self.docid] = [j["title"],j["section-name"],j["summary"]]
+                self.ntokens = self.ntokens + 1
+            self.articles[self.docid] = [j["all"]]
         
             self.artid = self.artid + 1
         self.docid = self.docid + 1
@@ -385,7 +386,7 @@ class SAR_Indexer:
         print("-" * 40)
         print("Number of indexed arcticles:", len(self.articles))
         print("-" * 40)
-        print('TOKENS:')
+        print('TOKENS:', self.ntokens)
         for field, tok in self.fields:
             if (self.multifield or field == "articles"):
                 print("\t# of tokens in '{}': {}".format(field, len(self.index[field])))
