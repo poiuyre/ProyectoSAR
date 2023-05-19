@@ -256,77 +256,49 @@ class SAR_Indexer:
         for i, line in enumerate(open(filename)):
             
             j = self.parse_articles(line)
-            self.articles[self.artid] = (self.docid, i)
+            #if self.articles.get(self.docid) == None and self.articles.get(i) == None  :
+            self.articles[self.artid] = (self.docid, i)      
             tokens = self.tokenize(j['all'])
             
 
             for t in tokens:
-                tokenAux = t
+                 
                 if self.index.get(t) == None:
-                    self.index[t] = [[self.docid,self.artid,self.ntokens]]
-                    self.articles[self.docid] = [[self.docid,self.artid,self.ntokens]]
-                    self.ntokens = self.ntokens + 1
+                    self.index[t] = [[self.docid,self.artid]]
+                    self.ntokens = self.ntokens + 1 # numero de tokens
                     
-                else:
-                    aux = self.index.get(t)
-                    aux.append([self.docid,self.artid,self.ntokens])
-                    
-                   
-                    self.index[t] = aux
-
-                    aux = self.articles.get(tokenAux)
-                    
-                   # aux.append([self.docid,self.artid,self.ntokens])
-                    self.articles[tokenAux] = aux
-                
-            self.artid = self.artid + 1   
-            self.articles[self.docid] = [[self.docid,self.artid,self.ntokens]]     
-            self.docid = self.docid + 1
-        """""
-
-        self.docs[self.docid] = filename   
-        for i, line in enumerate(open(filename)):
-            
-            j = self.parse_articles(line)
-            
-            
-            
-            self.articles[self.artid] = (self.docid, i)
-            
-            
-            tokens = self.tokenize(j['all'])
-            
-                
-
-        
-            for t in tokens:
-                tokenAux = t
-                if self.index.get(t) == None:
-                    self.index[t] = [[self.docid,self.artid,self.ntokens]]
-                    self.articles[self.docid] = [[self.docid,self.artid,self.ntokens]]
-                    
-                    
-                else:
-                    
-                    
+                else:                 
                     aux = self.index.get(t)
                     
-                    aux.append([self.docid,self.artid,self.ntokens])
+                    aux.append([self.docid,self.artid])
+                    self.index[t] = aux             
+                    aux = self.articles.get(t)
                     
-                   
-                    self.index[t] = aux
-
-                    aux = self.articles.get(tokenAux)
-                    
-                   # aux.append([self.docid,self.artid,self.ntokens])
-                    self.articles[tokenAux] = aux
-                    
-                self.ntokens = self.ntokens + 1
-            self.articles[self.docid] = [j["all"]]
-        
             self.artid = self.artid + 1
-            self.docid = self.docid + 1
-        
+            self.docid = self.docid + 1 # contador de socumentos
+
+        """""
+        self.docs[self.docid] = filename   
+        for i, line in enumerate(open(filename)):            
+            j = self.parse_articles(line)
+           self.articles[self.artid] = (self.docid, i)      
+            tokens = self.tokenize(j['all'])
+            for t in tokens:
+                t = t
+                if self.index.get(t) == None:
+                    self.index[t] = [[self.docid,self.artid,self.ntokens]]
+                    self.articles[self.docid] = [[self.docid,self.artid,self.ntokens]]                   
+                else:                                       
+                    aux = self.index.get(t)                   
+                    aux.append([self.docid,self.artid,self.ntokens])                                   
+                    self.index[t] = aux
+                    aux = self.articles.get(t)                   
+                   # aux.append([self.docid,self.artid,self.ntokens])
+                    self.articles[t] = aux                   
+                self.ntokens = self.ntokens + 1
+            self.articles[self.docid] = [j["all"]]        
+            self.artid = self.artid + 1
+            self.docid = self.docid + 1       
         """
         #
         # 
