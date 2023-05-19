@@ -289,7 +289,7 @@ class SAR_Wiki_Crawler:
             # Seleccionar una página no procesada de la cola de prioridad
             item = hq.heappop(queue)
             if item is not None:
-            	_, parent, url = item	
+                _, parent, url = item	
 
             # Descargar el contenido textual de la página y los enlaces que aparecen en ella
             entry_content, links = self.get_wikipedia_entry_content(url)
@@ -299,18 +299,19 @@ class SAR_Wiki_Crawler:
                     if self.is_valid_url(link) and link not in visited:
                         hq.heappush(queue, (max_depth_level, url, link))
                         visited.add(link)
+                    
             else:
-                # Añadir los enlaces a la cola de páginas pendientes de procesar  
-            	print("Error al obtener el contenido y los enlaces de la pagina: {url}")
-            	break
-            document = self.parse_wikipedia_textual_content(entry_content, url)
-            if document is not None and "title" in document and "summary" in document:
-            		documents.append(document)
-            		total_documents_captured += 1
-            		if batch_size is not None and len(documents) >= batch_size:
-            			self.save_documents(documents, f"{base_filename}_{files_count}.json")
-            			files_count += 1
-            			documents = []
+            # Añadir los enlaces a la cola de páginas pendientes de procesar
+                print(f"Error al obtener el contenido y los enlaces de la pagina: {url}")
+
+        document = self.parse_wikipedia_textual_content(entry_content, url)
+        if document is not None and "title" in document and "summary" in document:
+            documents.append(document)
+            total_documents_captured += 1
+            if batch_size is not None and len(documents) >= batch_size:
+                self.save_documents(documents, f"{base_filename}_{files_count}.json")
+                files_count += 1
+                documents = []
 
         # Guardar los documentos restantes si no se alcanzó el tamaño de batch
         if documents:
