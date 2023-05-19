@@ -331,7 +331,7 @@ class SAR_Indexer:
             
             
             self.articles[self.artid] = (self.docid, i)
-            print (self.articles[self.artid])
+            
             articulo =  self.articles[self.artid]
             tokens = self.tokenize(j['all'])
             numToken = 0
@@ -346,22 +346,22 @@ class SAR_Indexer:
                     
                     
                 else:
-                    print ("xxxxxxxxxxxxxxxxx")
+                    
                     
                     aux = self.index.get(t)
-                    print(aux)
-                    aux.append([self.docid,self.artid,numToken])
-                    print(aux)
-                    print ("xxxxxxxxxxxxxxxxx")
-                    print ("xxxxxxxxxxxxxxxxx")
-                    self.index[t] = aux
-
-                    aux = self.articles.get(t)
                     
                     aux.append([self.docid,self.artid,numToken])
+                    
+                   
+                    self.index[t] = aux
+
+                    aux = self.articles.get(tokenAux)
+                    
+                   # aux.append([self.docid,self.artid,numToken])
                     self.articles[tokenAux] = aux
+                    
                 numToken += 1
-            self.articles[self.docid] = [articulo["title"],articulo["date"],articulo["section-name"],articulo["summary"]]
+            self.articles[self.docid] = [j["title"],j["section-name"],j["summary"]]
         
             self.artid = self.artid + 1
         self.docid = self.docid + 1
