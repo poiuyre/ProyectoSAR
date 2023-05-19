@@ -256,12 +256,44 @@ class SAR_Indexer:
         for i, line in enumerate(open(filename)):
             
             j = self.parse_articles(line)
+            self.articles[self.artid] = (self.docid, i)
+            tokens = self.tokenize(j['all'])
+            
+
+            for t in tokens:
+                tokenAux = t
+                if self.index.get(t) == None:
+                    self.index[t] = [[self.docid,self.artid,self.ntokens]]
+                    self.articles[self.docid] = [[self.docid,self.artid,self.ntokens]]
+                    self.ntokens = self.ntokens + 1
+                    
+                else:
+                    aux = self.index.get(t)
+                    aux.append([self.docid,self.artid,self.ntokens])
+                    
+                   
+                    self.index[t] = aux
+
+                    aux = self.articles.get(tokenAux)
+                    
+                   # aux.append([self.docid,self.artid,self.ntokens])
+                    self.articles[tokenAux] = aux
+                
+            self.artid = self.artid + 1   
+            self.articles[self.docid] = [[self.docid,self.artid,self.ntokens]]     
+            self.docid = self.docid + 1
+        """""
+
+        self.docs[self.docid] = filename   
+        for i, line in enumerate(open(filename)):
+            
+            j = self.parse_articles(line)
             
             
             
             self.articles[self.artid] = (self.docid, i)
             
-            articulo =  self.articles[self.artid]
+            
             tokens = self.tokenize(j['all'])
             
                 
@@ -293,9 +325,9 @@ class SAR_Indexer:
             self.articles[self.docid] = [j["all"]]
         
             self.artid = self.artid + 1
-        self.docid = self.docid + 1
+            self.docid = self.docid + 1
         
-
+        """
         #
         # 
         # En la version basica solo se debe indexar el contenido "articles"
@@ -382,9 +414,9 @@ class SAR_Indexer:
         
         """
         print("=" * 40)
-        print("Number of indexed days:", len(self.docs))
+        print("Number of indexed files:", len(self.docs))
         print("-" * 40)
-        print("Number of indexed arcticles:", len(self.articles))
+        print("Number of indexed articles:", len(self.articles)) #
         print("-" * 40)
         print('TOKENS:', self.ntokens)
         for field, tok in self.fields:
