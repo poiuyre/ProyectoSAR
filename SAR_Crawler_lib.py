@@ -244,7 +244,7 @@ class SAR_Wiki_Crawler:
     def start_crawling(self, 
                     initial_urls: List[str], document_limit: int,
                     base_filename: str, batch_size: Optional[int], max_depth_level: int,
-                    ):        
+                    ):       
          
 
         """Comienza la captura de entradas de la Wikipedia a partir de una lista de urls válidas, 
@@ -281,40 +281,40 @@ class SAR_Wiki_Crawler:
             # Suponemos que vamos a poder alcanzar el límite para la nomenclatura
             # de guardado
             total_files = math.ceil(document_limit / batch_size)
-         # No sea none
          	
          # Proceso de captura
         while queue and total_documents_captured < document_limit:
     
             # Seleccionar una página no procesada de la cola de prioridad
             item = hq.heappop(queue)
-            if item is not None:
-            	_, parent, url = item	
-
+            depth, parent, url = item
+            complete_url = urljoin(parent, url)
+	    
             # Descargar el contenido textual de la página y los enlaces que aparecen en ella
-            entry_content, links = self.get_wikipedia_entry_content(url)
-
-            if entry_content is not None and links is not None:
-            	for link in links:
-                    if self.is_valid_url(link) and link not in visited:
-                        hq.heappush(queue, (max_depth_level, url, link))
-                        visited.add(link)
-            else:
+            entry_content, links = self.get_wikipedia_entry_content(complete_url)
+            for link in links:
+            	if self.is_valid_url(link) and link not in visited:
+            			new_url = urljoin(url, link)
+            			if depth + 1 <= max_depth_level:  
+            				hq.heappush(queue, (max_depth_level, url, link))
+            			visited.add(link)
+            
                 # Añadir los enlaces a la cola de páginas pendientes de procesar  
-            	print("Error al obtener el contenido y los enlaces de la pagina: {url}")
-            	break
+            	
             document = self.parse_wikipedia_textual_content(entry_content, url)
             if document is not None and "title" in document and "summary" in document:
             		documents.append(document)
             		total_documents_captured += 1
             		if batch_size is not None and len(documents) >= batch_size:
-            			self.save_documents(documents, f"{base_filename}_{files_count}.json")
+            			self.save_documents(documents, base_filename, files_count, total_files)
             			files_count += 1
             			documents = []
+            		elif documents:
+            			self.save_documents(documents, base_filename, files_count, total_files)
 
         # Guardar los documentos restantes si no se alcanzó el tamaño de batch
         if documents:
-            self.save_documents(documents, f"{base_filename}_{files_count}.json")
+            self.save_documents(documents, base_filename, files_count, total_files)
             
         return total_documents_captured
                         
