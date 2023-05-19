@@ -74,7 +74,7 @@ class SAR_Indexer:
         self.use_stemming = False # valor por defecto, se cambia con self.set_stemming()
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
         self.cont = 0
-        txt = []
+        self.texto = {}
         ax = {}
 
 
@@ -243,7 +243,7 @@ class SAR_Indexer:
         """
 
         Indexa el contenido de un fichero.
-        
+        pytho
         input: "filename" es el nombre de un fichero generado por el Crawler cada línea es un objeto json
             con la información de un artículo de la Wikipedia
 
@@ -254,6 +254,7 @@ class SAR_Indexer:
 
         """
 
+        """""
         with open(filename, 'r') as file:
 
             ##-------------extenssion por acabar----------
@@ -277,12 +278,14 @@ class SAR_Indexer:
                         pass
 
             ##------------------------------------------
-
+        """
         
         for i, line in enumerate(open(filename)):
+            
             j = self.parse_article(line)
             
-            self.txt[i] = j['all']
+            self.docs[i] = j['all']
+            ##j['all']
             
         
 
