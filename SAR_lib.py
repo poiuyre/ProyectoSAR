@@ -43,13 +43,7 @@ class SAR_Indexer:
 
         """
         self.urls = set() # hash para las urls procesadas,
-        self.index = {
-            'all': {},
-            'title': {},
-            'summary': {},
-            'section-name': {},
-            'summary': {},
-        } # hash para el indice invertido de terminos --> clave: termino, valor: posting list
+        self.index = {} # hash para el indice invertido de terminos --> clave: termino, valor: posting list
         self.sindex = {
             'all': {},
             'title': {},
@@ -75,7 +69,8 @@ class SAR_Indexer:
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
         self.cont = 0
         self.texto = {}
-        ax = {}
+        self.docid = 0
+        self.artid = 0
 
 
     ###############################
@@ -165,16 +160,16 @@ class SAR_Indexer:
     ###                         ###
     ###############################
 
-    def already_in_index(self, article:Dict) -> bool:
+    def already_in_index(self, articles:Dict) -> bool:
         """
 
         Args:
-            article (Dict): diccionario con la información de un artículo
+            articles (Dict): diccionario con la información de un artículo
 
         Returns:
             bool: True si el artículo ya está indexado, False en caso contrario
         """
-        return article['url'] in self.urls
+        return articles['url'] in self.urls
 
 
     def index_dir(self, root:str, **args):
@@ -213,7 +208,7 @@ class SAR_Indexer:
         ##########################################
         
         
-    def parse_article(self, raw_line:str) -> Dict[str, str]:
+    def parse_articles(self, raw_line:str) -> Dict[str, str]:
         """
         Crea un diccionario a partir de una linea que representa un artículo del crawler
 
@@ -224,19 +219,19 @@ class SAR_Indexer:
             Dict[str, str]: claves: 'url', 'title', 'summary', 'all', 'section-name'
         """
         
-        article = json.loads(raw_line)
+        articles = json.loads(raw_line)
         sec_names = []
         txt_secs = ''
-        for sec in article['sections']:
+        for sec in articles['sections']:
             txt_secs += sec['name'] + '\n' + sec['text'] + '\n'
             txt_secs += '\n'.join(subsec['name'] + '\n' + subsec['text'] + '\n' for subsec in sec['subsections']) + '\n\n'
             sec_names.append(sec['name'])
             sec_names.extend(subsec['name'] for subsec in sec['subsections'])
-        article.pop('sections') # no la necesitamos 
-        article['all'] = article['title'] + '\n\n' + article['summary'] + '\n\n' + txt_secs
-        article['section-name'] = '\n'.join(sec_names)
+        articles.pop('sections') # no la necesitamos 
+        articles['all'] = articles['title'] + '\n\n' + articles['summary'] + '\n\n' + txt_secs
+        articles['section-name'] = '\n'.join(sec_names)
 
-        return article
+        return articles
                 
     
     def index_file(self, filename:str):
@@ -254,44 +249,127 @@ class SAR_Indexer:
 
         """
 
-        """""
-        with open(filename, 'r') as file:
-
-            ##-------------extenssion por acabar----------
-            index = json.loads(file)
-            self.docs[self.cont] = filename
-            pos=0
-            for parte in index:
-                    # Realiza el indexado de acuerdo a los valores de multifield y positional
-                    self.articles[self.new_cont] = [self.doc_cont, pos
-                                                    ]
-                    if self.multifield:
-                        # Realiza el indexado considerando múltiples campos
-                        multifield = ['title', 'summary', 'section-name', ]
-                        
-                    else:
-                        # Realiza el indexado considerando un solo campo
-                          multifield = ['']
-                    
-                    if self.positional:
-                        # Realiza el indexado considerando la posición de los elementos
-                        pass
-
-            ##------------------------------------------
-        """
         
+
+
+
+        """""
         for i, line in enumerate(open(filename)):
             
-            j = self.parse_article(line)
+            j = self.parse_articles(line)
+            pos = 0
+            self.docs[self.docid] = j['all']
+            print("xxxxxxxx")
+            for articulo in j:
+                self.articles[self.artid] = {
+                    'docid': self.docid,
+                    'pos': pos
+                }
+                print(articulo)
+
+            print("xxxxxxxx")
+            for parte in self.index:
+                print (parte)
+                tokens = self.tokenize(articulo)
+                #posToken = 0
+                print("xxxxxxxx")
+                for t in tokens:
+                    if not self.index[parte].get(t,0):
+                        self.index[parte][t] = {self.artid: 1}
+                    else:
+                        self.index[parte][t][self.artid] +=1
+                    
+            pos = pos +1
+            self.artid = self.artid + 1
+        self.docid = self.docid + 1
+
             
-            self.docs[i] = j['all']
-            ##j['all']
             
+        """ 
+
+        """""
+        for i, line in enumerate(open(filename)):
+            
+            jlist = self.parse_articles(line)
+
+            for noticia in jlist:
+
+                
+                tokens = self.tokenize(jlist)
+                self.articulos[self.artid] = jlist
+                self.distCos[self.artid] = 0
+                numToken = 0
+                for token in tokens:
+                    tokenAux = token
+                    if self.index.get(token) == None:
+                        self.index[token] = [[self.docid,self.artid,numToken]]
+                        self.articles[tokenAux] = [[self.docid,self.artid,numToken]]
+                    else:
+                        aux = self.index.get(token)
+                        aux.append([self.docid,self.artid,numToken])
+                        self.index[token] = aux
+
+                        aux = self.articles.get(tokenAux)
+                        aux.append([self.docid,self.artid,numToken])
+                        self.articles[tokenAux] = aux
+                    numToken += 1
+                #self.news[self.artid] = [noticia["title"],noticia["date"],noticia["section-name"],noticia["summary"]]
+
+
+        """
+
+
+
+        
+
+
+        self.docs[self.docid] = filename   
+        for i, line in enumerate(open(filename)):
+            
+            j = self.parse_articles(line)
+            
+            
+            
+            self.articles[self.artid] = (self.docid, i)
+            print (self.articles[self.artid])
+            articulo =  self.articles[self.artid]
+            tokens = self.tokenize(j['all'])
+            numToken = 0
+                
+
+        
+            for t in tokens:
+                tokenAux = t
+                if self.index.get(t) == None:
+                    self.index[t] = [[self.docid,self.artid,numToken]]
+                    self.articles[self.docid] = [[self.docid,self.artid,numToken]]
+                    
+                    
+                else:
+                    print ("xxxxxxxxxxxxxxxxx")
+                    
+                    aux = self.index.get(t)
+                    print(aux)
+                    aux.append([self.docid,self.artid,numToken])
+                    print(aux)
+                    print ("xxxxxxxxxxxxxxxxx")
+                    print ("xxxxxxxxxxxxxxxxx")
+                    self.index[t] = aux
+
+                    aux = self.articles.get(t)
+                    
+                    aux.append([self.docid,self.artid,numToken])
+                    self.articles[tokenAux] = aux
+                numToken += 1
+            self.articles[self.docid] = [articulo["title"],articulo["date"],articulo["section-name"],articulo["summary"]]
+        
+            self.artid = self.artid + 1
+        self.docid = self.docid + 1
         
 
         #
         # 
-        # En la version basica solo se debe indexar el contenido "article"
+        # En la version basica solo se debe indexar el contenido "articles"
         #
         #
         #
@@ -377,23 +455,23 @@ class SAR_Indexer:
         print("=" * 40)
         print("Number of indexed days:", len(self.docs))
         print("-" * 40)
-        print("Number of indexed news:", len(self.news))
+        print("Number of indexed arcticles:", len(self.articles))
         print("-" * 40)
         print('TOKENS:')
         for field, tok in self.fields:
-            if (self.multifield or field == "article"):
+            if (self.multifield or field == "articles"):
                 print("\t# of tokens in '{}': {}".format(field, len(self.index[field])))
         if (self.permuterm):
             print("-" * 40)
             print('PERMUTERMS:')
             for field, tok in self.fields:
-                if (self.multifield or field == "article"):
+                if (self.multifield or field == "articles"):
                     print("\t# of tokens in '{}': {}".format(field, len(self.ptindex[field])))
         if (self.stemming):
             print("-" * 40)
             print('STEMS:')
             for field, tok in self.fields:
-                if (self.multifield or field == "article"):
+                if (self.multifield or field == "articles"):
                     print("\t# of tokens in '{}': {}".format(field, len(self.sindex[field])))
         print("-" * 40)
         if (self.positional):
@@ -449,9 +527,9 @@ class SAR_Indexer:
         # Caso base si solo hay un elemento para el que resolver la consulta
         if len(queryList) == 1:
             element = queryList[0]
-            # Si el indice es multicampo, guardamos el campo donde se buscara. Si no lo es, buscamos en 'article'
+            # Si el indice es multicampo, guardamos el campo donde se buscara. Si no lo es, buscamos en 'articles'
             if self.multifield: field, element = self.get_field(element)
-            else: field, element = 'article', query
+            else: field, element = 'articles', query
             # Si esta entre parentesis, los quitamos y llamamos a solve_query de la consulta interior
             if element.startswith('(') and element.endswith(')'):
                 element = element[1:len(element)-1] 
