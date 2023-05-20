@@ -23,7 +23,7 @@ class SAR_Indexer:
     # lista de campos, el booleano indica si se debe tokenizar el campo
     # NECESARIO PARA LA AMPLIACION MULTIFIELD
     fields = [
-        ("all", True), ("title", True), ("summary", True), ("section-name", True),('url', False)] 
+        ("all", True), ("title", True), ("summary", True), ("section-name", True)] #,('url', False)
     
     def_field = 'all'
     PAR_MARK = '%'
@@ -48,7 +48,6 @@ class SAR_Indexer:
             'title': {},
             'summary': {},
             'section-name': {},
-            'summary': {},
             'url': {}
         } # hash para el indice invertido de terminos --> clave: termino, valor: posting list
         self.sindex = {
@@ -56,14 +55,13 @@ class SAR_Indexer:
             'title': {},
             'summary': {},
             'section-name': {},
-            'summary': {},
         } # hash para el indice invertido de stems --> clave: stem, valor: lista con los terminos que tienen ese stem
         self.ptindex = {
             'all': {},
             'title': {},
             'summary': {},
             'section-name': {},
-            'summary': {},
+            
         } # hash para el indice permuterm.
         self.docs = {} # diccionario de terminos --> clave: entero(docid),  valor: ruta del fichero.
         self.weight = {} # hash de terminos para el pesado, ranking de resultados.
@@ -78,15 +76,6 @@ class SAR_Indexer:
         self.docid = 0
         self.artid = 0
         self.ntokens = 0
-
-
-        #ampliacion stemming
-        self.stitle = {} # diccionario para almacenar los tokens de los titulos
-        self.sdates = {} # diccionario para almacenar las fechas
-        self.skeywords = {} # diccionario para almacenar los tokens de los keywords
-        self.sarticle = {} # diccionario para almacenar los tokens de article
-        self.ssummary = {} # diccionario para almacenar los tokens de summary
-        self.articulos = {} #diccionario de articulos para cada noticia
 
 
 
@@ -223,7 +212,8 @@ class SAR_Indexer:
         ##########################################
         ## COMPLETAR PARA FUNCIONALIDADES EXTRA ##
         ##########################################
-        
+        if self.stemming:
+            self.make_stemming()
         
     def parse_articles(self, raw_line:str) -> Dict[str, str]:
         """
@@ -277,9 +267,7 @@ class SAR_Indexer:
                 pass
             else:
                 # No hay ninguna coincidencia de URL en self.articles
-                self.articles[self.artid] = (self.docid, i, url)
-
-            
+                self.articles[self.artid] = (self.docid, i, url)        
 
             if not self.multifield:
                 tokens = self.tokenize(j['all'])
@@ -297,7 +285,7 @@ class SAR_Indexer:
                 fields = ['all', 'title', 'summary', 'section-name', 'url']
 
                 for field in fields:
-                    if field != 'url':
+                    if field != 'url': # si el campo no es url tokenizamos
                         tokens = self.tokenize(j[field])
                         for t in tokens:
                             if field == 'url':
@@ -308,62 +296,23 @@ class SAR_Indexer:
                             else:
                                 self.index[field][t].update({'docid': self.docid, 'artid': self.artid})
                     else:
-                        """""
-                        if any(url == article[2] for article in self.articles.values()):
-                            # Hay al menos una coincidencia de URL en self.articles
-                            pass
-                        else:
-                            # No hay ninguna coincidencia de URL en self.articles
-                            self.index['url'] = (self.docid, i, url)
-                            """
-                        
-                        aux = j['url'].splitlines()
+
+                        aux = j['url'].splitlines() # partimos el j['url'] en lineas para comprobar que no estan ya en index igual que al principio en articles
                         
                         for t in aux:
                             if self.index['url'].get(t) == None:
-                                #print(line)
+                                
                                 self.index['url'][t] = {'docid': self.docid, 'artid': self.artid}
                                 self.ntokens = self.ntokens + 1 
                             else:
-                                #print(t , "en pos; ", self.index['url'][t])
+                                
                                 self.index['url'][t].update({'docid': self.docid, 'artid': self.artid})
-                                #print(self.index['url'][t])
-                        
+                                
+            
                 self.artid = self.artid + 1
             
             self.docid = self.docid + 1 # contador de documentos
 
-        """"
-                self.docs[self.docid] = filename   
-        for i, line in enumerate(open(filename)):
-            
-            j = self.parse_articles(line)
-            
-            url = j['url']
-            if any(url == article[2] for article in self.articles.values()):
-                # Hay al menos una coincidencia de URL en self.articles
-                pass
-            else:
-                # No hay ninguna coincidencia de URL en self.articles
-                self.articles[self.artid] = (self.docid, i, url)
-
-            tokens = self.tokenize(j['all'])
-            for t in tokens:
-
-                if self.index.get(t) == None:#si no hay ninguna entrada de ese token
-                    self.index[t] = [[self.docid,self.artid]]# se añade la referencia al documento y articulo al que pertenece el token
-                    self.ntokens = self.ntokens + 1 # numero de tokens
-                    
-                else:                 #si hay alguna entrada de ese token
-                    aux = self.index.get(t)
-                    
-                    aux.append([self.docid,self.artid]) # se añade a su posting list el nuevo articulo o documento en el que aparece
-                    self.index[t] = aux             
-                    
-                    
-            self.artid = self.artid + 1
-        self.docid = self.docid + 1 
-        """
         #
         # 
         # En la version basica solo se debe indexar el contenido "articles"
@@ -417,7 +366,7 @@ class SAR_Indexer:
 
 
         """
-        
+        """""
         for token in self.index.keys():
             stem = self.stemmer.stem(token)
             if self.index.get(stem) == None:
@@ -426,58 +375,26 @@ class SAR_Indexer:
                 aux = self.sindex.get(stem)
                 aux.append(token)
                 self.sindex[stem] = aux
-            """""
-            if self.multifield:
-                for token in self.title.keys():
-                    stem = self.stemmer.stem(token)
+           """
+        if self.multifield:
+            multifield = ['all','title','summary','section-name', ]
+            
+        else:
+            multifield = ['all']
+        for field in multifield:
+            
+            for token in self.index[field].keys():
+                steam_token = self.stemmer.stem(token)
+                if steam_token not in self.sindex[field]:
+                    
+                    self.sindex[field][steam_token] = [token]
+                else:
+                    
+                    if token not in self.sindex[field][steam_token]:
+                        self.sindex[field][steam_token] += [token]
+        
 
-                    if self.stitle.get(stem) == None:
-                        self.stitle[stem] = [token]
-                    else:
-                        aux = self.stitle.get(stem)
-                        aux.append(token)
-                        self.stitle[stem] = aux
-
-                for token in self.dates.keys():
-                    stem = self.stemmer.stem(token)
-
-                    if self.sdates.get(stem) == None:
-                        self.sdates[stem] = [token]
-                    else:
-                        aux = self.sdates.get(stem)
-                        aux.append(token)
-                        self.sdates[stem] = aux
-
-                for token in self.keywords.keys():
-                    stem = self.stemmer.stem(token)
-
-                    if self.skeywords.get(stem) == None:
-                        self.skeywords[stem] = [token]
-                    else:
-                        aux = self.skeywords.get(stem)
-                        aux.append(token)
-                        self.skeywords[stem] = aux
-
-                for token in self.article.keys():
-                    stem = self.stemmer.stem(token)
-
-                    if self.sarticle.get(stem) == None:
-                        self.sarticle[stem] = [token]
-                    else:
-                        aux = self.sarticle.get(stem)
-                        aux.append(token)
-                        self.sarticle[stem] = aux
-
-                for token in self.summary.keys():
-                    stem = self.stemmer.stem(token)
-
-                    if self.ssummary.get(stem) == None:
-                        self.ssummary[stem] = [token]
-                    else:
-                        aux = self.ssummary.get(stem)
-                        aux.append(token)
-                        self.ssummary[stem] = aux
-                """
+        
         ####################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
         ####################################################
@@ -515,19 +432,19 @@ class SAR_Indexer:
         print("-" * 40)
         print('TOKENS:', self.ntokens)
         for field, tok in self.fields:
-            if (self.multifield or field == "articles"):
+            if (self.multifield or field == "all"):
                 print("\t# of tokens in '{}': {}".format(field, len(self.index[field])))
         if (self.permuterm):
             print("-" * 40)
             print('PERMUTERMS:')
             for field, tok in self.fields:
-                if (self.multifield or field == "articles"):
+                if (self.multifield or field == "all"):
                     print("\t# of tokens in '{}': {}".format(field, len(self.ptindex[field])))
         if (self.stemming):
             print("-" * 40)
             print('STEMS:')
             for field, tok in self.fields:
-                if (self.multifield or field == "articles"):
+                if (self.multifield or field == "all"):
                     print("\t# of tokens in '{}': {}".format(field, len(self.sindex[field])))
         print("-" * 40)
         if (self.positional):
