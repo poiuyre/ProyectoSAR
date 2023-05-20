@@ -23,8 +23,8 @@ class SAR_Indexer:
     # lista de campos, el booleano indica si se debe tokenizar el campo
     # NECESARIO PARA LA AMPLIACION MULTIFIELD
     fields = [
-        ("all", True), ("title", True), ("summary", True), ("section-name", True), ('url', False),
-    ]
+        ("all", True), ("title", True), ("summary", True), ("section-name", True),('url', False)] 
+    
     def_field = 'all'
     PAR_MARK = '%'
     # numero maximo de documento a mostrar cuando self.show_all es False
@@ -43,7 +43,14 @@ class SAR_Indexer:
 
         """
         self.urls = set() # hash para las urls procesadas,
-        self.index = {} # hash para el indice invertido de terminos --> clave: termino, valor: posting list
+        self.index =  {
+            'all': {},
+            'title': {},
+            'summary': {},
+            'section-name': {},
+            'summary': {},
+            'url': {}
+        } # hash para el indice invertido de terminos --> clave: termino, valor: posting list
         self.sindex = {
             'all': {},
             'title': {},
@@ -71,6 +78,16 @@ class SAR_Indexer:
         self.docid = 0
         self.artid = 0
         self.ntokens = 0
+
+
+        #ampliacion stemming
+        self.stitle = {} # diccionario para almacenar los tokens de los titulos
+        self.sdates = {} # diccionario para almacenar las fechas
+        self.skeywords = {} # diccionario para almacenar los tokens de los keywords
+        self.sarticle = {} # diccionario para almacenar los tokens de article
+        self.ssummary = {} # diccionario para almacenar los tokens de summary
+        self.articulos = {} #diccionario de articulos para cada noticia
+
 
 
     ###############################
@@ -249,9 +266,75 @@ class SAR_Indexer:
 
         """
 
-
-
         self.docs[self.docid] = filename   
+        for i, line in enumerate(open(filename)):
+            
+            j = self.parse_articles(line)
+            
+            url = j['url']
+            if any(url == article[2] for article in self.articles.values()):
+                # Hay al menos una coincidencia de URL en self.articles
+                pass
+            else:
+                # No hay ninguna coincidencia de URL en self.articles
+                self.articles[self.artid] = (self.docid, i, url)
+
+            
+
+            if not self.multifield:
+                tokens = self.tokenize(j['all'])
+                for t in tokens:
+
+                    if not self.index['all'].get(t):    #si no hay ninguna entrada de ese token
+                        self.index['all'][t] = {'docid': self.docid, 'artid': self.artid}# se añade la referencia al documento y articulo al que pertenece el token
+                        self.ntokens = self.ntokens + 1 # numero de tokens
+                        
+                    else:                 #si hay alguna entrada de ese token
+                        self.index['all'][t].update({'docid': self.docid, 'artid': self.artid})
+                self.artid = self.artid + 1
+
+            else:
+                fields = ['all', 'title', 'summary', 'section-name', 'url']
+
+                for field in fields:
+                    if field != 'url':
+                        tokens = self.tokenize(j[field])
+                        for t in tokens:
+                            if field == 'url':
+                                print(t)
+                            if self.index[field].get(t) == None:
+                                self.index[field][t] = {self.artid: 1}
+                                self.ntokens = self.ntokens + 1 
+                            else:
+                                self.index[field][t].update({'docid': self.docid, 'artid': self.artid})
+                    else:
+                        """""
+                        if any(url == article[2] for article in self.articles.values()):
+                            # Hay al menos una coincidencia de URL en self.articles
+                            pass
+                        else:
+                            # No hay ninguna coincidencia de URL en self.articles
+                            self.index['url'] = (self.docid, i, url)
+                            """
+                        
+                        aux = j['url'].splitlines()
+                        
+                        for t in aux:
+                            if self.index['url'].get(t) == None:
+                                #print(line)
+                                self.index['url'][t] = {'docid': self.docid, 'artid': self.artid}
+                                self.ntokens = self.ntokens + 1 
+                            else:
+                                #print(t , "en pos; ", self.index['url'][t])
+                                self.index['url'][t].update({'docid': self.docid, 'artid': self.artid})
+                                #print(self.index['url'][t])
+                        
+                self.artid = self.artid + 1
+            
+            self.docid = self.docid + 1 # contador de documentos
+
+        """"
+                self.docs[self.docid] = filename   
         for i, line in enumerate(open(filename)):
             
             j = self.parse_articles(line)
@@ -279,30 +362,7 @@ class SAR_Indexer:
                     
                     
             self.artid = self.artid + 1
-        self.docid = self.docid + 1 # contador de documentos
-
-        """""
-        self.docs[self.docid] = filename   
-        for i, line in enumerate(open(filename)):            
-            j = self.parse_articles(line)
-           self.articles[self.artid] = (self.docid, i)      
-            tokens = self.tokenize(j['all'])
-            for t in tokens:
-                t = t
-                if self.index.get(t) == None:
-                    self.index[t] = [[self.docid,self.artid,self.ntokens]]
-                    self.articles[self.docid] = [[self.docid,self.artid,self.ntokens]]                   
-                else:                                       
-                    aux = self.index.get(t)                   
-                    aux.append([self.docid,self.artid,self.ntokens])                                   
-                    self.index[t] = aux
-                    aux = self.articles.get(t)                   
-                   # aux.append([self.docid,self.artid,self.ntokens])
-                    self.articles[t] = aux                   
-                self.ntokens = self.ntokens + 1
-            self.articles[self.docid] = [j["all"]]        
-            self.artid = self.artid + 1
-            self.docid = self.docid + 1       
+        self.docid = self.docid + 1 
         """
         #
         # 
@@ -358,7 +418,66 @@ class SAR_Indexer:
 
         """
         
-        pass
+        for token in self.index.keys():
+            stem = self.stemmer.stem(token)
+            if self.index.get(stem) == None:
+                self.sindex[stem] = [token]
+            else:
+                aux = self.sindex.get(stem)
+                aux.append(token)
+                self.sindex[stem] = aux
+            """""
+            if self.multifield:
+                for token in self.title.keys():
+                    stem = self.stemmer.stem(token)
+
+                    if self.stitle.get(stem) == None:
+                        self.stitle[stem] = [token]
+                    else:
+                        aux = self.stitle.get(stem)
+                        aux.append(token)
+                        self.stitle[stem] = aux
+
+                for token in self.dates.keys():
+                    stem = self.stemmer.stem(token)
+
+                    if self.sdates.get(stem) == None:
+                        self.sdates[stem] = [token]
+                    else:
+                        aux = self.sdates.get(stem)
+                        aux.append(token)
+                        self.sdates[stem] = aux
+
+                for token in self.keywords.keys():
+                    stem = self.stemmer.stem(token)
+
+                    if self.skeywords.get(stem) == None:
+                        self.skeywords[stem] = [token]
+                    else:
+                        aux = self.skeywords.get(stem)
+                        aux.append(token)
+                        self.skeywords[stem] = aux
+
+                for token in self.article.keys():
+                    stem = self.stemmer.stem(token)
+
+                    if self.sarticle.get(stem) == None:
+                        self.sarticle[stem] = [token]
+                    else:
+                        aux = self.sarticle.get(stem)
+                        aux.append(token)
+                        self.sarticle[stem] = aux
+
+                for token in self.summary.keys():
+                    stem = self.stemmer.stem(token)
+
+                    if self.ssummary.get(stem) == None:
+                        self.ssummary[stem] = [token]
+                    else:
+                        aux = self.ssummary.get(stem)
+                        aux.append(token)
+                        self.ssummary[stem] = aux
+                """
         ####################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
         ####################################################
@@ -581,6 +700,12 @@ class SAR_Indexer:
         """
         
         stem = self.stemmer.stem(term)
+
+        res = []
+        if (stem in self.sindex[field]):
+            for token in self.sindex[field][stem]:
+                res = self.or_posting(res, list(self.index[field][token].keys()))
+        return res
 
         ####################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
