@@ -67,8 +67,7 @@ class SAR_Indexer:
         self.show_snippet = False # valor por defecto, se cambia con self.set_snippet()
         self.use_stemming = False # valor por defecto, se cambia con self.set_stemming()
         self.use_ranking = False  # valor por defecto, se cambia con self.set_ranking()
-        self.cont = 0
-        self.texto = {}
+        
         self.docid = 0
         self.artid = 0
         self.ntokens = 0
@@ -256,26 +255,31 @@ class SAR_Indexer:
         for i, line in enumerate(open(filename)):
             
             j = self.parse_articles(line)
-            #if self.articles.get(self.docid) == None and self.articles.get(i) == None  :
-            self.articles[self.artid] = (self.docid, i)      
-            tokens = self.tokenize(j['all'])
             
+            url = j['url']
+            if any(url == article[2] for article in self.articles.values()):
+                # Hay al menos una coincidencia de URL en self.articles
+                pass
+            else:
+                # No hay ninguna coincidencia de URL en self.articles
+                self.articles[self.artid] = (self.docid, i, url)
 
+            tokens = self.tokenize(j['all'])
             for t in tokens:
-                 
-                if self.index.get(t) == None:
-                    self.index[t] = [[self.docid,self.artid]]
+
+                if self.index.get(t) == None:#si no hay ninguna entrada de ese token
+                    self.index[t] = [[self.docid,self.artid]]# se añade la referencia al documento y articulo al que pertenece el token
                     self.ntokens = self.ntokens + 1 # numero de tokens
                     
-                else:                 
+                else:                 #si hay alguna entrada de ese token
                     aux = self.index.get(t)
                     
-                    aux.append([self.docid,self.artid])
+                    aux.append([self.docid,self.artid]) # se añade a su posting list el nuevo articulo o documento en el que aparece
                     self.index[t] = aux             
-                    aux = self.articles.get(t)
+                    
                     
             self.artid = self.artid + 1
-            self.docid = self.docid + 1 # contador de socumentos
+        self.docid = self.docid + 1 # contador de documentos
 
         """""
         self.docs[self.docid] = filename   
@@ -790,7 +794,7 @@ class SAR_Indexer:
         print("consulta: ", query)
         print("ha salido ", len(resultado), "veces")
 
-        pass
+        
         ################
         ## COMPLETAR  ##
         ################
