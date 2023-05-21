@@ -23,7 +23,7 @@ class SAR_Indexer:
     # lista de campos, el booleano indica si se debe tokenizar el campo
     # NECESARIO PARA LA AMPLIACION MULTIFIELD
     fields = [
-        ("all", True), ("title", True), ("summary", True), ("section-name", True)] #,('url', False)
+        ("all", True), ("title", True), ("summary", True), ("section-name", True),('url', False)] #
     
     def_field = 'all'
     PAR_MARK = '%'
@@ -55,6 +55,7 @@ class SAR_Indexer:
             'title': {},
             'summary': {},
             'section-name': {},
+            'url': {}
         } # hash para el indice invertido de stems --> clave: stem, valor: lista con los terminos que tienen ese stem
         self.ptindex = {
             'all': {},
@@ -288,8 +289,7 @@ class SAR_Indexer:
                     if field != 'url': # si el campo no es url tokenizamos
                         tokens = self.tokenize(j[field])
                         for t in tokens:
-                            if field == 'url':
-                                print(t)
+                            
                             if self.index[field].get(t) == None:
                                 self.index[field][t] = {self.artid: 1}
                                 self.ntokens = self.ntokens + 1 
@@ -377,21 +377,26 @@ class SAR_Indexer:
                 self.sindex[stem] = aux
            """
         if self.multifield:
-            multifield = ['all','title','summary','section-name', ]
+            multifield = ['all','title','summary','section-name', 'url']
             
         else:
             multifield = ['all']
         for field in multifield:
-            
-            for token in self.index[field].keys():
-                steam_token = self.stemmer.stem(token)
-                if steam_token not in self.sindex[field]:
-                    
-                    self.sindex[field][steam_token] = [token]
-                else:
-                    
-                    if token not in self.sindex[field][steam_token]:
-                        self.sindex[field][steam_token] += [token]
+            if field != 'url':
+                for token in self.index[field].keys():
+                    steam_token = self.stemmer.stem(token)
+                    if steam_token not in self.sindex[field]:
+                        
+                        self.sindex[field][steam_token] = [token]
+                    else:
+                        
+                        if token not in self.sindex[field][steam_token]:
+                            self.sindex[field][steam_token] += [token]
+            else:
+                for token in self.index[field].keys():
+                    if token not in self.sindex[field]:
+                        
+                        self.sindex[field][token] = [token]
         
 
         
