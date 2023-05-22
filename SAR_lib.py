@@ -58,13 +58,7 @@ class SAR_Indexer:
             'section-name': {},
             'url': {}
         } # hash para el indice invertido de stems --> clave: stem, valor: lista con los terminos que tienen ese stem
-        self.ptindex = {
-            'all': {},
-            'title': {},
-            'summary': {},
-            'section-name': {},
-            
-        } # hash para el indice permuterm.
+        self.ptindex = {} # hash para el indice permuterm.
         self.docs = {} # diccionario de terminos --> clave: entero(docid),  valor: ruta del fichero.
         self.weight = {} # hash de terminos para el pesado, ranking de resultados.
         self.articles = {} # hash de articulos --> clave entero (artid), valor: la info necesaria para diferencia los artículos dentro de su fichero
