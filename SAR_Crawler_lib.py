@@ -287,32 +287,6 @@ class SAR_Wiki_Crawler:
     
             # Seleccionar una página no procesada de la cola de prioridad
             item = hq.heappop(queue)
-<<<<<<< HEAD
-            if item is not None:
-                _, parent, url = item	
-
-            # Descargar el contenido textual de la página y los enlaces que aparecen en ella
-            entry_content, links = self.get_wikipedia_entry_content(url)
-
-            if entry_content is not None and links is not None:
-            	for link in links:
-                    if self.is_valid_url(link) and link not in visited:
-                        hq.heappush(queue, (max_depth_level, url, link))
-                        visited.add(link)
-                    
-            else:
-            # Añadir los enlaces a la cola de páginas pendientes de procesar
-                print(f"Error al obtener el contenido y los enlaces de la pagina: {url}")
-
-        document = self.parse_wikipedia_textual_content(entry_content, url)
-        if document is not None and "title" in document and "summary" in document:
-            documents.append(document)
-            total_documents_captured += 1
-            if batch_size is not None and len(documents) >= batch_size:
-                self.save_documents(documents, f"{base_filename}_{files_count}.json")
-                files_count += 1
-                documents = []
-=======
             depth, parent, url = item
             complete_url = urljoin(parent, url)
 	    
@@ -320,24 +294,23 @@ class SAR_Wiki_Crawler:
             entry_content, links = self.get_wikipedia_entry_content(complete_url)
             for link in links:
             	if self.is_valid_url(link) and link not in visited:
-            			new_url = urljoin(url, link)
-            			if depth + 1 <= max_depth_level:  
-            				hq.heappush(queue, (max_depth_level, url, link))
-            			visited.add(link)
+                    new_url = urljoin(url, link)
+                    if depth + 1 <= max_depth_level:  
+                        hq.heappush(queue, (max_depth_level, url, link))
+                    visited.add(link)
             
                 # Añadir los enlaces a la cola de páginas pendientes de procesar  
             	
             document = self.parse_wikipedia_textual_content(entry_content, url)
             if document is not None and "title" in document and "summary" in document:
-            		documents.append(document)
-            		total_documents_captured += 1
-            		if batch_size is not None and len(documents) >= batch_size:
-            			self.save_documents(documents, base_filename, files_count, total_files)
-            			files_count += 1
-            			documents = []
-            		elif documents:
-            			self.save_documents(documents, base_filename, files_count, total_files)
->>>>>>> 0b34f518b723a0642961778a47885ef68ffaa86a
+                documents.append(document)
+                total_documents_captured += 1
+                if batch_size is not None and len(documents) >= batch_size:
+                    self.save_documents(documents, base_filename, files_count, total_files)
+                    files_count += 1
+                    documents = []
+                elif documents:
+                    self.save_documents(documents, base_filename, files_count, total_files)
 
         # Guardar los documentos restantes si no se alcanzó el tamaño de batch
         if documents:
@@ -347,17 +320,17 @@ class SAR_Wiki_Crawler:
                         
          
 
-        """Comienza la captura de entradas de la Wikipedia a partir de una lista de urls vÃ¡lidas, 
-            termina cuando no hay urls en la cola o llega al mÃ¡ximo de documentos a capturar.
-        
-        Args:
-            initial_urls: Direcciones a artÃ­culos de la Wikipedia
-            document_limit (int): MÃ¡ximo nÃºmero de documentos a capturar
-            base_filename (str): Nombre base del fichero de guardado.
-            batch_size (Optional[int]): Cada cuantos documentos se guardan en
-                fichero. Si se asigna None, se guardarÃ¡ al finalizar la captura.
-            max_depth_level (int): Profundidad mÃ¡xima de captura.
-        """
+    """Comienza la captura de entradas de la Wikipedia a partir de una lista de urls vÃ¡lidas, 
+        termina cuando no hay urls en la cola o llega al mÃ¡ximo de documentos a capturar.
+    
+    Args:
+        initial_urls: Direcciones a artÃ­culos de la Wikipedia
+        document_limit (int): MÃ¡ximo nÃºmero de documentos a capturar
+        base_filename (str): Nombre base del fichero de guardado.
+        batch_size (Optional[int]): Cada cuantos documentos se guardan en
+            fichero. Si se asigna None, se guardarÃ¡ al finalizar la captura.
+        max_depth_level (int): Profundidad mÃ¡xima de captura.
+    """
 
     	
     def wikipedia_crawling_from_url(self,

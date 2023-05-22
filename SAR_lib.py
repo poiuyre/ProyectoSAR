@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 from typing import Optional, List, Union, Dict
 import pickle
+from distutils import filelist
 
 class SAR_Indexer:
     """
@@ -468,6 +469,22 @@ class SAR_Indexer:
     ###   PARTE 2.1: RECUPERACION   ###
     ###                             ###
     ###################################
+    def get_field(self, query):
+        """
+        Separar campo para la busqueda de query
+
+        param:  "query": cadena con el fragmeto de la query
+
+        return: campo de la busqueda, fragmento de la query
+
+        """
+        field = 'all'
+
+        if query.startswith(('all:','title', 'summary', 'section-name', 'url')):
+            field, query = query[:query.index(':')], query[query.index(':')+1:]
+
+        return field, query
+    
 
 
     def solve_query(self, query:str, prev:Dict={}):
@@ -494,11 +511,12 @@ class SAR_Indexer:
         else: queryList = query
         
         # Caso base si solo hay un elemento para el que resolver la consulta
+        self.multifield = True
         if len(queryList) == 1:
             element = queryList[0]
-            # Si el indice es multicampo, guardamos el campo donde se buscara. Si no lo es, buscamos en 'articles'
+            # Si el indice es multicampo, guardamos el campo donde se buscara. Si no lo es, buscamos en 'all'
             if self.multifield: field, element = self.get_field(element)
-            else: field, element = 'articles', query
+            else: field, element = 'all', query
             # Si esta entre parentesis, los quitamos y llamamos a solve_query de la consulta interior
             if element.startswith('(') and element.endswith(')'):
                 element = element[1:len(element)-1] 
@@ -549,7 +567,7 @@ class SAR_Indexer:
         closePar = [m.start() for m in re.finditer(r'\)',query)]
         
         # Conteo de parentesis
-        ini = []; fin = []; closed = 0;
+        ini = []; fin = []; closed = 0
         for index in sorted(openPar + closePar):
             if closed == 0: ini.append(index)
             if index in openPar:
@@ -603,7 +621,7 @@ class SAR_Indexer:
         needAnd = False # Booleano para saber si hace falta un and
         for ind, word in enumerate(spcList):
             word = word.strip()
-            if word in ['title:', 'date:', 'keywords:', 'article:', 'summary:'] and spcList[ind+1].startswith('"'):
+            if word in ['all:','title', 'summary', 'section-name', 'url'] and spcList[ind+1].startswith('"'):
                 spcList[ind+1] = word + spcList[ind+1]
                 if needAnd:
                     queryFinal.append('and')
@@ -651,6 +669,9 @@ class SAR_Indexer:
         """
         # Llamada al get que corresponde según los parámetros indicados
         solution = []
+        self.permuterm = False
+        self.positional = False
+        self.stemming = False
         if self.permuterm and ('*' in term or '?' in term):
             solution =  self.get_permuterm(term, field)
         elif self.positional:
@@ -707,11 +728,11 @@ class SAR_Indexer:
         
         stem = self.stemmer.stem(term)
 
-        res = []
+        pos_list = []
         if (stem in self.sindex[field]):
             for token in self.sindex[field][stem]:
-                res = self.or_posting(res, list(self.index[field][token].keys()))
-        return res
+                pos_list = self.or_posting(pos_list, list(self.index[field][token].keys()))
+        return pos_list
 
         ####################################################
         ## COMPLETAR PARA FUNCIONALIDAD EXTRA DE STEMMING ##
@@ -922,8 +943,8 @@ class SAR_Indexer:
 
         resultado = self.solve_query(query)
 
-        print("consulta: ", query)
-        print("ha salido ", len(resultado), "veces")
+        print(query, "  ", resultado)
+        #print("Ha salido:", len(resultado), "veces")
 
         
         ################
