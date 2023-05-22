@@ -274,13 +274,16 @@ class SAR_Indexer:
             if not self.multifield:
                 tokens = self.tokenize(j['all'])
                 for t in tokens:
-
+                    #print(self.index['all'][t]['docid'])
                     if not self.index['all'].get(t):    #si no hay ninguna entrada de ese token
-                        self.index['all'][t] = {'docid': self.docid, 'artid': self.artid}# se añade la referencia al documento y articulo al que pertenece el token
+                        
+                        
+                        self.index['all'][t] = {'docid': [self.docid], 'artid': [self.artid]}# se añade la referencia al documento y articulo al que pertenece el token
                         self.ntokens = self.ntokens + 1 # numero de tokens
                         
                     else:                 #si hay alguna entrada de ese token
-                        self.index['all'][t].update({'docid': self.docid, 'artid': self.artid})
+                        self.index['all'][t]["artid"].append(self.artid)
+                        self.index['all'][t]["docid"].append(self.docid)
                 self.artid = self.artid + 1
 
             else:
@@ -292,10 +295,12 @@ class SAR_Indexer:
                         for t in tokens:
                             
                             if self.index[field].get(t) == None:
-                                self.index[field][t] = {self.artid: 1}
+                                
+                                self.index[field][t] = {'docid': [self.docid], 'artid': [self.artid]}
                                 self.ntokens = self.ntokens + 1 
                             else:
-                                self.index[field][t].update({'docid': self.docid, 'artid': self.artid})
+                               self.index[field][t]["artid"].append(self.artid)
+                               self.index[field][t]["docid"].append(self.docid)
                     else:
 
                         aux = j['url'].splitlines() # partimos el j['url'] en lineas para comprobar que no estan ya en index igual que al principio en articles
@@ -303,11 +308,12 @@ class SAR_Indexer:
                         for t in aux:
                             if self.index['url'].get(t) == None:
                                 
-                                self.index['url'][t] = {'docid': self.docid, 'artid': self.artid}
+                                self.index['url'][t] = {'docid': [self.docid], 'artid': [self.artid]}
                                 self.ntokens = self.ntokens + 1 
                             else:
                                 
-                                self.index['url'][t].update({'docid': self.docid, 'artid': self.artid})
+                                self.index['url'][t]["artid"].append(self.artid)
+                                self.index['url'][t]["docid"].append(self.docid)
                                 
             
                 self.artid = self.artid + 1
@@ -942,8 +948,9 @@ class SAR_Indexer:
         """
 
         resultado = self.solve_query(query)
-
-        print(query, "  ", resultado)
+        valores_distintos_docid = set(resultado['docid'])
+        cantidad_valores_distintos_docid = len(valores_distintos_docid)
+        print(query, "  ", cantidad_valores_distintos_docid)
         #print("Ha salido:", len(resultado), "veces")
 
         
