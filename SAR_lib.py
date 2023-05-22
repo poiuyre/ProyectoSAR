@@ -366,16 +366,7 @@ class SAR_Indexer:
 
 
         """
-        """""
-        for token in self.index.keys():
-            stem = self.stemmer.stem(token)
-            if self.index.get(stem) == None:
-                self.sindex[stem] = [token]
-            else:
-                aux = self.sindex.get(stem)
-                aux.append(token)
-                self.sindex[stem] = aux
-           """
+
         if self.multifield:
             multifield = ['all','title','summary','section-name', 'url']
             
